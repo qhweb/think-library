@@ -1,0 +1,22 @@
+{
+    "name": "qhweb/think-library",
+    "description": "think Library",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "qhweb",
+            "email": "qhweb@foxmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php":">=5.6" 
+    },
+    "autoload":{
+        "psr-4":{
+            "YYCms\\Library":"src/YYCms/Library"
+        }
+    }
+
+}
