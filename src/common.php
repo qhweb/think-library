@@ -1,4 +1,13 @@
 <?php
+// +----------------------------------------------------------------------
+// | LHSystem
+// +----------------------------------------------------------------------
+// | 版权所有 2014~2020 青海云音信息技术有限公司 [ http://www.yyinfos.com ]
+// +----------------------------------------------------------------------
+// | 官方网站: https://www.yyinfos.com
+// +----------------------------------------------------------------------
+// | 作者：独角戏 <qhweb@foxmail.com>
+// +----------------------------------------------------------------------
 declare(strict_types=1);
 
 use think\facade\Event;
@@ -12,6 +21,9 @@ use think\helper\{
         'addons:config' => '\\YYCms\\command\\SendConfig'
     ]);
 });
+
+
+
 
 // 插件类库自动载入
 spl_autoload_register(function ($class) {
@@ -175,3 +187,224 @@ if (!function_exists('addons_url')) {
     }
 }
 
+function pr($value='')
+{
+  print_r($value);exit;
+}
+/**
+ * 获取拼音
+ * @param $string
+ * @param string $encoding
+ */
+function Pinyin($string, $encoding = 'utf-8'){
+    return \YYCms\Service::Pinyin()->getPinyin($string, $encoding);
+}
+
+/**
+ * 获取拼音缩写
+ * @param $string
+ * @param string $encoding
+ */
+function ShortPinyin($string, $encoding = 'utf-8'){
+    return \YYCms\Service::Pinyin()->getShortPinyin($string, $encoding);
+}
+
+/**
+ * 加密函数
+ * @param $txt
+ * @param string $key
+ * @return string
+ */
+function lock_url($txt,$key='qhweb')
+{
+    $chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    $nh = rand(0,61);
+    $ch = $chars[$nh];
+    $mdKey = md5($key.$ch);
+    $mdKey = substr($mdKey,$nh%8, $nh%8+7);
+    $txt = base64_encode($txt);
+    $tmp = '';
+    $k = 0;
+    for ($i=0; $i<strlen($txt); $i++) {
+        $k = $k == strlen($mdKey) ? 0 : $k;
+        $j = ($nh+strpos($chars,$txt[$i])+ord($mdKey[$k++]))%65;
+        $tmp .= $chars[$j];
+    }
+    return urlencode($ch.$tmp);
+}
+
+/**
+ * 解密函数
+ * @param $txt
+ * @param string $key
+ * @return bool|string
+ */
+function unlock_url($txt,$key='qhweb')
+{
+    $txt = urldecode($txt);
+    $chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    $ch = $txt[0];
+    $nh = strpos($chars,$ch);
+    $mdKey = md5($key.$ch);
+    $mdKey = substr($mdKey,$nh%8, $nh%8+7);
+    $txt = substr($txt,1);
+    $tmp = '';
+    $k = 0;
+    for ($i=0; $i<strlen($txt); $i++) {
+        $k = $k == strlen($mdKey) ? 0 : $k;
+        $j = strpos($chars,$txt[$i])-$nh - ord($mdKey[$k++]);
+        while ($j<0) $j+=65;
+        $tmp .= $chars[$j];
+    }
+    return base64_decode($tmp);
+}
+
+/**
+ * 缩略图生成
+ * @param $srcPath 图片原地址
+ * @param string $newWidth  缩略图图片的宽，默认200
+ */
+function ThumbSrc($srcPath,$newWidth='200'){
+    if(empty($srcPath)) return '';
+    $strInfo = parse_url($srcPath);
+    if(isset($strInfo['host']) && $strInfo['host'] != $_SERVER['HTTP_HOST']) return $srcPath;
+    $extension = pathinfo($strInfo['path'],PATHINFO_EXTENSION);
+    $newSrc =  $strInfo['path'].'.w'.$newWidth.'.'.$extension;
+    return (isset($strInfo['scheme']) ? $strInfo['scheme'] .'://' . $strInfo['host'] : '') . $newSrc;
+}
+
+/**
+ * 404错误页面
+ */
+function _404($text=''){
+    $text = !empty($text) ? $text : '对不起，您请求的页面不存在、或已被删除、或暂时不可用';
+    $head404   = "data:image/png;base64," . base64_encode(file_get_contents(__DIR__ .'/../assets/image/head404.png'));
+    $txtbg404   = "data:image/png;base64," . base64_encode(file_get_contents(__DIR__ .'/../assets/image/txtbg404.png'));
+    $html='<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+            <html xmlns="http://www.w3.org/1999/xhtml">
+            <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+            <title>404-对不起！您访问的页面不存在</title>
+            <style type="text/css">
+            .head404{ width:580px; height:234px; margin:50px auto 0 auto; background:url('.$head404.') no-repeat; }
+            .txtbg404{ width:499px; height:169px; margin:10px auto 0 auto; background:url('.$txtbg404.') no-repeat;}
+            .txtbg404 .txtbox{ width:390px; position:relative; top:30px; left:60px;color:#eee; font-size:13px;}
+            .txtbg404 .txtbox p {margin:5px 0; line-height:18px;}
+            .txtbg404 .txtbox .paddingbox { padding-top:15px;}
+            .txtbg404 .txtbox p a { color:#eee; text-decoration:none;}
+            .txtbg404 .txtbox p a:hover { color:#FC9D1D; text-decoration:underline;}
+            </style>
+            </head>
+            <body bgcolor="#494949">
+                <div class="head404"></div>
+                <div class="txtbg404">
+              <div class="txtbox">
+                  <p>'.$text.'</p>
+                  <p class="paddingbox">请点击以下链接继续浏览网页</p>
+                  <p>》<a style="cursor:pointer" onclick="history.back()">返回上一页面</a></p>
+                  <p>》<a href="'.request()->domain().'">返回网站首页</a></p>
+                </div>
+              </div>
+            </body>
+            </html>';
+    exit($html);
+}
+
+
+
+
+//删除目录（递归删除）
+function delDir($dir){
+  //传入文件的路径
+  //遍历目录
+  $arr = scandir($dir);
+  foreach ($arr as $val) {
+      if ($val != '.' && $val != '..') {
+          //路径链接
+          $file = $dir . '/' . $val;
+          if (is_dir($file)) {
+              delDir($file);
+          } else {
+              unlink($file);
+          }
+      }
+  }
+  rmdir($dir);
+}
+
+
+// 目录复制
+function copyDir($dir1, $dir2){
+    if(!file_exists($dir1)) return true;
+    if (!file_exists($dir2)) {
+        $cdir = mkdir($dir2,0777);
+    }
+
+    //遍历原目录
+    $arr = scandir($dir1);
+    foreach ($arr as $val) {
+        if ($val != '.' && $val != '..') {
+            //原目录拼接
+            $sfile = $dir1 . '/' . $val;
+            //目的目录拼接
+            $dfile = $dir2 . '/' . $val;
+            if (is_dir($sfile)) {
+                copyDir($sfile, $dfile);
+            } else {
+                copy($sfile, $dfile);
+            }
+        }
+    }
+}
+
+
+if (!function_exists('moveDir')) {
+  // 移动目录
+  function moveDir($dir1, $dir2){
+      copyDir($dir1, $dir2);
+      delDir($dir1);
+  }
+}
+/**
+* 创建文件夹
+*/
+function createDir($path, $mode = 0777){
+  if (is_dir($path))
+      return TRUE;
+  $ftp_enable = 0;
+  $path = format_dir_path($path);
+  $temp = explode('/', $path);
+  $cur_dir = '';
+  $max = count($temp) - 1;
+  for ($i = 0; $i < $max; $i++) {
+      $cur_dir .= $temp[$i] . '/';
+      if (@is_dir($cur_dir))
+          continue;
+      @mkdir($cur_dir, 0777, true);
+      @chmod($cur_dir, 0777);
+  }
+  return is_dir($path);
+}
+
+
+
+/**
+* 获取文件夹路径
+*/
+function format_dir_path($path=''){
+  if(empty($path)) return '';
+  $path = str_replace('\\', '/', $path);
+  if (substr($path, -1) != '/')  $path = $path . '/';
+  return $path;
+}
+
+
+/**
+* 字节格式化
+*/
+function filesize_formatted($path){
+  $size = filesize($path);
+  $units = array('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
+  $power = $size > 0 ? floor(log($size, 1024)) : 0;
+  return number_format($size / pow(1024, $power), 2, '.', ',') . ' ' . $units[$power];
+}

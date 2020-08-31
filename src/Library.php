@@ -1,36 +1,26 @@
 <?php
-
 // +----------------------------------------------------------------------
-// | ThinkAdmin
+// | LHSystem
 // +----------------------------------------------------------------------
-// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// | 版权所有 2014~2020 青海云音信息技术有限公司 [ http://www.yyinfos.com ]
 // +----------------------------------------------------------------------
-// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// | 官方网站: https://www.yyinfos.com
 // +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
-// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// | 作者：独角戏 <qhweb@foxmail.com>
 // +----------------------------------------------------------------------
 
 namespace YYCms;
 
 use think\middleware\SessionInit;
 use think\Request;
-use think\Service;
-use think\helper\Str;
-use think\facade\Config;
-use think\facade\Lang;
-use think\facade\Cache;
-use think\facade\Event;
+use think\Route;
 use YYCms\middleware\Addons;
-
 /**
  * 模块注册服务
  * Class Library
  * @package think\admin
  */
-class Library extends Service
+class Library extends \think\Service
 {
     protected $addons_path;
 
@@ -41,10 +31,11 @@ class Library extends Service
     {
         // 注册系统任务指令
         $this->commands([
-            'YYCms\command\SendConfig',
+            'YYCms\command\SendConfig'
         ]);
         //注册系统插件服务
         $this->addonsBoot();
+
     }
 
     /**
@@ -55,6 +46,7 @@ class Library extends Service
         // 加载中文语言
         $this->app->lang->load(__DIR__ . '/lang/zh-cn.php', 'zh-cn');
         $this->app->lang->load(__DIR__ . '/lang/en-us.php', 'en-us');
+
         // 输入变量默认过滤
         $this->app->request->filter(['trim']);
         // 判断访问模式，兼容 CLI 访问控制器
@@ -65,7 +57,7 @@ class Library extends Service
         } else {
             // 注册会话初始化中间键
             if ($this->app->request->request('not_init_session', 0) == 0) {
-                $this->app->middleware->add(SessionInit::class);
+                $this->app->middleware->add(SessionInit::class);                
             }
             // 注册访问处理中间键
             $this->app->middleware->add(function (Request $request, \Closure $next) {
@@ -76,9 +68,15 @@ class Library extends Service
                     $header['Access-Control-Allow-Headers'] = 'Authorization,Content-Type,If-Match,If-Modified-Since,If-None-Match,If-Unmodified-Since,X-Requested-With';
                     $header['Access-Control-Expose-Headers'] = 'User-Form-Token,User-Token,Token';
                 }
+                return $next($request)->header($header);
             }, 'route');
+            //自动缩略图中间件
+            $this->app->middleware->add(\YYCms\middleware\Autothumb::class); 
         }
         $this->initAddons();
+        //安装检测
+        \YYCms\service\InstallService::instance()->install();
+        $this->app->route->get('thumbnail/:img', '\\yycms\\CompressController@Compressimg');
     }
 
     /**
@@ -94,7 +92,7 @@ class Library extends Service
         // 加载插件系统服务
         $this->loadService();
         // 绑定插件容器
-        $this->app->bind('addons', Service::class);
+        $this->app->bind('addons', Library::class);
     }
     /**
      * 启动插件服务
@@ -112,8 +110,9 @@ class Library extends Service
 
             // 注册控制器路由
             $route->rule("addons/:addon/[:controller]/[:action]", $execute)->middleware(Addons::class);
+
             // 自定义路由
-            $routes = (array) Config::get('addons.route', []);
+            $routes = (array) $this->app->config->get('addons.route', []);
             foreach ($routes as $key => $val) {
                 if (!$val) {
                     continue;
@@ -152,15 +151,16 @@ class Library extends Service
                 }
             }
         });
+
     }
     /**
      * 插件事件
      */
     private function loadEvent()
     {
-        $hooks = $this->app->isDebug() ? [] : Cache::get('hooks', []);
+        $hooks = $this->app->isDebug() ? [] : $this->app->cache->get('hooks', []);
         if (empty($hooks)) {
-            $hooks = (array) Config::get('addons.hooks', []);
+            $hooks = (array) $this->app->config->get('addons.hooks', []);
             // 初始化钩子
             foreach ($hooks as $key => $values) {
                 if (is_string($values)) {
@@ -172,15 +172,15 @@ class Library extends Service
                     return [get_addons_class($v), $key];
                 }, $values));
             }
-            Cache::set('hooks', $hooks);
+           $this->app->cache->set('hooks', $hooks);
         }
         //如果在插件中有定义 AddonsInit，则直接执行
         if (isset($hooks['AddonsInit'])) {
             foreach ($hooks['AddonsInit'] as $k => $v) {
-                Event::trigger('AddonsInit', $v);
+                $this->app->event->trigger('AddonsInit', $v);
             }
         }
-        Event::listenEvents($hooks);
+        $this->app->event->listenEvents($hooks);
     }
 
     /**
@@ -223,10 +223,10 @@ class Library extends Service
     private function autoload()
     {
         // 是否处理自动载入
-        if (!Config::get('addons.autoload', true)) {
+        if (!$this->app->config->get('addons.autoload', true)) {
             return true;
         }
-        $config = Config::get('addons');
+        $config = $this->app->config->get('addons');
         // 读取插件目录及钩子列表
         $base = get_class_methods("\\YYCms\\Addons");
         // 读取插件目录中的php文件
@@ -256,7 +256,7 @@ class Library extends Service
                 }
             }
         }
-        Config::set($config, 'addons');
+        $this->app->config->set($config, 'addons');
     }
 
     /**

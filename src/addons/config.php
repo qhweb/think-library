@@ -1,12 +1,12 @@
 <?php
 // +----------------------------------------------------------------------
-// | thinkphp5 Addons [ WE CAN DO IT JUST THINK IT ]
+// | LHSystem
 // +----------------------------------------------------------------------
-// | Copyright (c) 2016 http://www.zzstudio.net All rights reserved.
+// | 版权所有 2014~2020 青海云音信息技术有限公司 [ http://www.yyinfos.com ]
 // +----------------------------------------------------------------------
-// | Licensed ( http://www.apache.org/licenses/LICENSE-2.0 )
+// | 官方网站: https://www.yyinfos.com
 // +----------------------------------------------------------------------
-// | Author: Byron Sampson <xiaobo.sun@qq.com>
+// | 作者：独角戏 <qhweb@foxmail.com>
 // +----------------------------------------------------------------------
 
 return [

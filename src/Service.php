@@ -1,16 +1,13 @@
 <?php
 
 // +----------------------------------------------------------------------
-// | ThinkYYCms
+// | LHSystem
 // +----------------------------------------------------------------------
-// | 版权所有 2014~2020 广州楚才信息科技有限公司 [ http://www.cuci.cc ]
+// | 版权所有 2014~2020 青海云音信息技术有限公司 [ http://www.yyinfos.com ]
 // +----------------------------------------------------------------------
-// | 官方网站: https://gitee.com/zoujingli/ThinkLibrary
+// | 官方网站: https://www.yyinfos.com
 // +----------------------------------------------------------------------
-// | 开源协议 ( https://mit-license.org )
-// +----------------------------------------------------------------------
-// | gitee 代码仓库：https://gitee.com/zoujingli/ThinkLibrary
-// | github 代码仓库：https://github.com/zoujingli/ThinkLibrary
+// | 作者：独角戏 <qhweb@foxmail.com>
 // +----------------------------------------------------------------------
 
 namespace YYCms;
@@ -26,10 +23,16 @@ use think\Container;
 abstract class Service
 {
     /**
-     * 应用实例
+     * 应用容器
      * @var App
      */
-    protected $app;
+    public $app;
+
+    /**
+     * 请求对象
+     * @var Request
+     */
+    public $request;
 
     /**
      * Service constructor.
@@ -38,6 +41,7 @@ abstract class Service
     public function __construct(App $app)
     {
         $this->app = $app;
+        $this->request = $app->request;
         $this->initialize();
     }
 
